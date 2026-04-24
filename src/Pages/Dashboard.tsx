@@ -1,16 +1,11 @@
 // src/pages/Dashboard.tsx
 import { useState } from "react";
 import { useTheme } from "../context/ThemeContext";
-import {
-  FaUserCircle,
-  FaCog,
-  FaUsers,
-  FaComments,
-  FaPaperclip,
-  FaMicrophone,
-} from "react-icons/fa";
+import { FaComments, FaPaperclip, FaMicrophone } from "react-icons/fa";
 import { FiSearch, FiArrowLeft } from "react-icons/fi";
 import ThemeToggler from "../components/ThemeToggler";
+import Sidebar from "../components/Sidebar";
+import BottomNav from "../components/BottomNav";
 
 export default function Dashboard() {
   const { theme } = useTheme();
@@ -62,33 +57,12 @@ export default function Dashboard() {
 
   return (
     <div
-      className={`min-h-screen flex ${theme === "light" ? "bg-white" : "bg-gray-800 text-white"}`}
+      className={`min-h-screen flex flex-col md:flex-row ${theme === "light" ? "bg-white" : "bg-gray-800 text-white"}`}
     >
       {/* Left Sidebar (desktop only) */}
-      <div className="hidden md:flex w-20 flex-col justify-between">
-        <div className="flex flex-col items-center space-y-6 mt-6">
-          <button className="flex flex-col items-center text-sm hover:text-blue-600 transition">
-            <FaComments className="text-2xl mb-1" />
-            Chat
-          </button>
-          <button className="flex flex-col items-center text-sm hover:text-blue-600 transition">
-            <FaUsers className="text-2xl mb-1" />
-            Friends
-          </button>
-          <button className="flex flex-col items-center text-sm hover:text-blue-600 transition">
-            <FaCog className="text-2xl mb-1" />
-            Settings
-          </button>
-        </div>
-        <div
-          className="p-4 cursor-pointer hover:opacity-80"
-          onClick={() => console.log("Go to profile page")}
-        >
-          <FaUserCircle className="text-4xl" />
-        </div>
-      </div>
+      <Sidebar />
 
-      {/* Chat List (mobile + desktop) */}
+      {/* Chat List (desktop) */}
       <div
         className={`flex-1 flex flex-col ${selectedChat ? "hidden md:flex" : "flex"}`}
       >
@@ -164,7 +138,6 @@ export default function Dashboard() {
           <>
             {/* Chat Header */}
             <div className="flex items-center space-x-3 p-4">
-              {/* Back button on mobile */}
               <button
                 className="md:hidden"
                 onClick={() => setSelectedChat(null)}
@@ -222,6 +195,9 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+
+      {/* Bottom Nav (mobile only, only on chat list) */}
+      <BottomNav show={selectedChat === null} />
     </div>
   );
 }
