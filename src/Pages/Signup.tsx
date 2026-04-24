@@ -19,7 +19,6 @@ export default function Signup() {
     email: "",
     phone: "",
     password: "",
-    confirmPassword: "",
   });
   const [loading, setLoading] = useState(false); // button spinner
   const [isOpen, setIsOpen] = useState(false); // modal open/close

@@ -7,6 +7,7 @@ import Login from "./Pages/Login";
 // Dashbaord (Chat Page)
 import Dashboard from "./Pages/Dashboard";
 import Friends from "./Pages/Friends";
+import Profile from "./Pages/Profile";
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
           {/* Dashboard */}
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/friends" element={<Friends />} />
+          <Route path="/profile" element={<Profile />} />
         </Routes>
       </Router>
     </ThemeProvider>
