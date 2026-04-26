@@ -1,39 +1,30 @@
 // src/pages/Dashboard.tsx
-import { useState, useEffect } from "react"; // ✅ Added useEffect
+import { useState, useEffect } from "react";
 import { useTheme } from "../context/ThemeContext";
-import {
-  FaPaperclip,
-  FaMicrophone,
-  FaPaperPlane,
-  FaComments,
-} from "react-icons/fa";
+import { useChat } from "../context/ChatContext";
+import { useSocial } from "../context/SocialContext";
+import { FaPaperclip, FaPaperPlane, FaComments, FaBell } from "react-icons/fa";
 import { FiSearch, FiArrowLeft } from "react-icons/fi";
 import Sidebar from "../components/Sidebar";
 import BottomNav from "../components/BottomNav";
+import { Link } from "react-router-dom";
 
 export default function Dashboard() {
   const { theme } = useTheme();
+  const chatContext = useChat();
+  const socialContext = useSocial();
+
+  const chats = chatContext?.chats || [];
+  const loading = chatContext?.loading || false;
+  const requests = socialContext?.requests || [];
+
   const [selectedChat, setSelectedChat] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  // Mock data - set to empty array [] to test the "Global" empty state
-  const chats = [
-    {
-      id: "1",
-      name: "Alice",
-      lastMessage: "Hey, how are you?",
-      time: "10:45",
-      avatar: null,
-    },
-    {
-      id: "2",
-      name: "Bob",
-      lastMessage: "Let’s meet tomorrow.",
-      time: "09:30",
-      avatar: null,
-    },
-  ];
+  const filteredChats = chats.filter((chat: any) =>
+    chat.name.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
 
-  // ✅ Handle ESC key to deselect chat (Desktop only feel)
   useEffect(() => {
     const handleEsc = (event: KeyboardEvent) => {
       if (event.key === "Escape") setSelectedChat(null);
@@ -42,20 +33,40 @@ export default function Dashboard() {
     return () => window.removeEventListener("keydown", handleEsc);
   }, []);
 
-  const getAvatar = (chat: any) => (
-    <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold shadow-md">
-      {chat?.name?.charAt(0)}
+  const activeChat = chats.find((c: any) => c.id === selectedChat);
+  const isChatListEmpty = chats.length === 0;
+
+  const EmptyStateUI = ({ title, desc }: { title: string; desc: string }) => (
+    <div className="flex flex-col items-center justify-center h-full p-8 text-center space-y-4">
+      <div
+        className={`p-8 rounded-[3rem] transition-colors ${theme === "light" ? "bg-blue-50 shadow-inner" : "bg-blue-900/20"}`}
+      >
+        <FaComments
+          className={`text-6xl ${theme === "light" ? "text-blue-200" : "text-blue-600/40"}`}
+        />
+      </div>
+      <h2 className="font-black text-xl tracking-tight">{title}</h2>
+      <p
+        className={`text-xs max-w-[220px] leading-relaxed ${theme === "light" ? "text-slate-400" : "text-gray-500"}`}
+      >
+        {desc}
+      </p>
+      {isChatListEmpty && (
+        <Link
+          to="/friends"
+          className="mt-2 text-[10px] font-black text-blue-600 uppercase tracking-widest bg-white dark:bg-blue-900/30 px-6 py-3 rounded-2xl shadow-sm border border-blue-100 dark:border-transparent active:scale-95 transition"
+        >
+          Find Friends
+        </Link>
+      )}
     </div>
   );
 
-  const activeChat = chats.find((c) => c.id === selectedChat);
-  const isChatListEmpty = chats.length === 0;
-
   return (
     <div
-      className={`min-h-screen flex flex-col md:flex-row ${
+      className={`min-h-screen flex flex-col md:flex-row transition-colors duration-500 ${
         theme === "light"
-          ? "bg-gray-50 text-gray-800"
+          ? "bg-[#f8fafc] text-slate-900"
           : "bg-gray-950 text-white"
       }`}
     >
@@ -63,64 +74,95 @@ export default function Dashboard() {
 
       {/* Chat List Section */}
       <div
-        className={`flex-1 md:max-w-sm flex flex-col border-r ${
+        className={`flex-1 md:max-w-sm flex flex-col border-r transition-colors ${
           theme === "light"
-            ? "bg-white border-gray-200"
+            ? "bg-white border-slate-200"
             : "bg-gray-900 border-gray-800"
         } ${selectedChat ? "hidden md:flex" : "flex"}`}
       >
-        <div className="p-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-blue-600 tracking-tight">
+        <div className="p-6 flex justify-between items-center">
+          <h1 className="text-2xl font-black text-blue-600 tracking-tighter">
             Chatify
           </h1>
-        </div>
-
-        <div className="px-4 pb-4">
-          <div
-            className={`flex items-center rounded-2xl px-4 py-2.5 ${
-              theme === "light" ? "bg-gray-100" : "bg-blue-950/40"
+          <Link
+            to="/notifications"
+            className={`md:hidden relative p-3 rounded-2xl transition-colors ${
+              theme === "light"
+                ? "bg-slate-100 text-slate-500"
+                : "bg-gray-800 text-gray-400"
             }`}
           >
-            <FiSearch className="text-gray-400 mr-2" />
+            <FaBell size={18} />
+            {requests.length > 0 && (
+              <span className="absolute top-2 right-2 bg-red-500 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-gray-900" />
+            )}
+          </Link>
+        </div>
+
+        {/* Search Bar */}
+        <div className="px-6 pb-6">
+          <div
+            className={`flex items-center rounded-2xl px-4 py-3 transition-all ${
+              theme === "light"
+                ? "bg-slate-50 border border-slate-300 focus-within:border-blue-200 focus-within:bg-white focus-within:shadow-sm"
+                : "bg-blue-950/30 focus-within:bg-blue-950/50"
+            }`}
+          >
+            <FiSearch className="text-slate-400 mr-2" />
             <input
               type="text"
               placeholder="Search chats..."
-              className="bg-transparent focus:outline-none w-full text-sm"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="bg-transparent focus:outline-none w-full text-sm font-medium"
             />
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
-          {isChatListEmpty ? (
-            /* ✅ Mobile/Desktop: Show this ONLY if there are 0 chats total */
-            <div className="flex flex-col items-center justify-center h-full p-8 text-center space-y-4">
-              <div className="bg-blue-100 dark:bg-blue-900/30 p-4 rounded-full">
-                <FiSearch className="text-4xl text-blue-600" />
-              </div>
-              <p className="text-sm text-gray-500 font-medium">
-                No conversations yet. Tap the Search icon to find friends!
-              </p>
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
+          {loading ? (
+            <div className="p-8 text-center text-slate-400 text-[10px] font-black uppercase tracking-widest animate-pulse">
+              Fetching Signal...
+            </div>
+          ) : isChatListEmpty ? (
+            <div className="h-full py-10 opacity-60">
+              <EmptyStateUI
+                title="Empty Inbox"
+                desc="Your chat history is clear. Ready to start a new loop?"
+              />
             </div>
           ) : (
-            chats.map((chat) => (
+            filteredChats.map((chat: any) => (
               <div
                 key={chat.id}
                 onClick={() => setSelectedChat(chat.id)}
-                className={`flex items-center gap-4 px-4 py-4 cursor-pointer transition ${
+                className={`flex items-center gap-4 px-6 py-5 cursor-pointer transition-all ${
                   selectedChat === chat.id
-                    ? "bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-600"
-                    : "hover:bg-gray-100 dark:hover:bg-gray-800/40 border-l-4 border-transparent"
+                    ? theme === "light"
+                      ? "bg-blue-50/50 border-r-4 border-blue-600 shadow-sm"
+                      : "bg-blue-900/20 border-r-4 border-blue-600"
+                    : theme === "light"
+                      ? "hover:bg-slate-50 border-r-4 border-transparent"
+                      : "hover:bg-gray-800/40 border-r-4 border-transparent"
                 }`}
               >
-                {getAvatar(chat)}
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex-shrink-0 flex items-center justify-center text-white font-black shadow-lg shadow-blue-600/20 uppercase">
+                  {chat.name.charAt(0)}
+                </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="font-bold truncate">{chat.name}</span>
-                    <span className="text-[10px] text-gray-400">
-                      {chat.time}
+                  <div className="flex justify-between items-center">
+                    <span
+                      className={`font-bold text-sm truncate ${theme === "light" ? "text-slate-800" : "text-white"}`}
+                    >
+                      {chat.name}
+                    </span>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase">
+                      12:45 PM
                     </span>
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                  <p
+                    className={`text-xs truncate mt-0.5 ${theme === "light" ? "text-slate-500" : "text-gray-400"}`}
+                  >
                     {chat.lastMessage}
                   </p>
                 </div>
@@ -130,85 +172,83 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Inbox Section */}
+      {/* Inbox View */}
       <div
-        className={`flex-1 flex flex-col ${selectedChat ? "flex" : "hidden md:flex"} ${
+        className={`flex-1 flex flex-col ${selectedChat ? "flex" : "hidden md:flex"} transition-colors duration-300 ${
           theme === "light" ? "bg-white" : "bg-gray-800"
         }`}
       >
         {selectedChat ? (
           <>
-            {/* Active Chat Header */}
             <div
-              className={`flex items-center justify-between p-4 border-b ${
+              className={`p-5 border-b flex items-center justify-between transition-colors ${
                 theme === "light"
-                  ? "border-gray-200 bg-white"
-                  : "border-gray-700 bg-gray-900"
+                  ? "bg-white/80 backdrop-blur-md border-slate-100"
+                  : "bg-gray-900/80 backdrop-blur-md border-gray-700"
               }`}
             >
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-4">
                 <button
-                  className="md:hidden"
                   onClick={() => setSelectedChat(null)}
+                  className="md:hidden p-2 -ml-2 text-slate-400 hover:text-blue-600 transition"
                 >
-                  <FiArrowLeft className="text-2xl" />
+                  <FiArrowLeft size={24} />
                 </button>
-                {getAvatar(activeChat)}
-                <div className="flex flex-col text-left">
-                  <span className="font-bold leading-tight">
+                <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
+                  {activeChat?.name.charAt(0)}
+                </div>
+                <div>
+                  <div className="font-black tracking-tight text-sm">
                     {activeChat?.name}
-                  </span>
-                  <span className="text-[10px] text-green-500 font-bold uppercase">
-                    Online
-                  </span>
+                  </div>
+                  <div className="text-[9px] text-green-500 font-black uppercase flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                    Active Now
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex-1 p-6 overflow-y-auto space-y-4">
-              {/* Messages */}
+            <div
+              className={`flex-1 overflow-y-auto p-6 transition-colors ${theme === "light" ? "bg-[#fcfdfe]" : "bg-gray-950/30"}`}
+            >
+              {/* Messages map here */}
             </div>
 
-            {/* Input Bar */}
             <div
-              className={`p-4 ${theme === "light" ? "bg-white" : "bg-gray-900"}`}
+              className={`p-6 ${theme === "light" ? "bg-white border-t border-slate-100" : "bg-gray-900"}`}
             >
               <div
-                className={`flex items-center gap-3 p-2 px-4 rounded-2xl ${theme === "light" ? "bg-gray-100" : "bg-gray-800"}`}
+                className={`flex items-center gap-3 p-2 px-4 rounded-[1.5rem] transition-all ${
+                  theme === "light"
+                    ? "bg-slate-100 focus-within:bg-white focus-within:shadow-lg focus-within:shadow-blue-600/5 focus-within:ring-1 focus-within:ring-blue-100"
+                    : "bg-gray-800"
+                }`}
               >
-                <FaPaperclip className="text-gray-400" />
+                <FaPaperclip className="text-slate-400 cursor-pointer hover:text-blue-600 transition" />
                 <input
                   type="text"
-                  placeholder="Type a message..."
-                  className="flex-1 bg-transparent focus:outline-none text-sm"
+                  placeholder="Message..."
+                  className="flex-1 bg-transparent focus:outline-none text-sm py-2 font-medium"
                 />
-                <button className="bg-blue-600 text-white p-2.5 rounded-xl">
+                <button className="bg-blue-600 text-white p-3 rounded-2xl shadow-lg shadow-blue-600/30 active:scale-90 transition-transform">
                   <FaPaperPlane size={14} />
                 </button>
               </div>
             </div>
           </>
         ) : (
-          /* ✅ Desktop Empty State (SelectedChat is null) */
-          <div className="hidden md:flex flex-1 flex-col items-center justify-center space-y-4 px-6 text-center bg-gray-50 dark:bg-gray-950/50">
-            <div className="bg-white dark:bg-gray-900 p-8 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-800 flex flex-col items-center">
-              <FaComments className="text-6xl text-blue-600/20 mb-4" />
-              <h2 className="text-xl font-bold">
-                {isChatListEmpty
-                  ? "Start a Conversation"
-                  : "Chatify for Desktop"}
-              </h2>
-              <p className="text-gray-500 dark:text-gray-400 max-w-xs mt-2">
-                {isChatListEmpty
-                  ? "Tap the search icon in the sidebar to find friends and start messaging."
-                  : "Select a chat from your list to begin a conversation. Press 'Esc' to close a chat."}
-              </p>
-            </div>
+          <div
+            className={`hidden md:flex flex-1 items-center justify-center transition-colors ${theme === "light" ? "bg-slate-50" : "bg-gray-950/50"}`}
+          >
+            <EmptyStateUI
+              title="Secure Communications"
+              desc="Select a verified connection to decrypt and view your message history."
+            />
           </div>
         )}
       </div>
 
-      {/* Mobile Bottom Nav - Only show if no chat is open */}
       <BottomNav show={selectedChat === null} />
     </div>
   );

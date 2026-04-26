@@ -1,41 +1,56 @@
 // src/context/ChatContext.tsx
 import { createContext, useContext, useEffect, useState } from "react";
-import { supabase } from "../lib/supabase";
+import { supabase } from "../lib/supabase"; // ✅ Use your verified client path
 import { useUser } from "./UserContext";
 
 const ChatContext = createContext<any>(null);
 
 export function ChatProvider({ children }: { children: React.ReactNode }) {
   const { user } = useUser();
-  const [chats, setChats] = useState([]);
+  const [chats, setChats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch only "Accepted" friendships to show in the Dashboard
-  const fetchChats = async () => {
-    if (!user) return;
+  // Inside src/context/ChatContext.tsx
 
+  const fetchChats = async () => {
+    if (!user?.id) return;
+
+    // 1. Fetch friendships AND the latest message for each
     const { data, error } = await supabase
       .from("friendships")
       .select(
         `
-        id,
-        sender:sender_id(id, fullName, avatar),
-        receiver:receiver_id(id, fullName, avatar)
-      `,
+      id,
+      sender:sender_id(id, full_name, avatar), 
+      receiver:receiver_id(id, full_name, avatar),
+      messages (
+        content,
+        created_at
+      )
+    `,
       )
       .eq("status", "accepted")
-      .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`);
+      .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+      // This ordering ensures we get the newest message if we limit it
+      .order("created_at", { foreignTable: "messages", ascending: false })
+      .limit(1, { foreignTable: "messages" });
 
-    if (!error) {
-      // Format the data so the "Friend" is always the other person
+    if (!error && data) {
       const formattedChats = data.map((f: any) => {
         const friend = f.sender.id === user.id ? f.receiver : f.sender;
+
+        // 2. Get the actual last message content
+        const lastMsg =
+          f.messages && f.messages.length > 0
+            ? f.messages[0].content
+            : "No messages yet";
+
         return {
-          id: f.id, // Friendship ID acts as Chat ID
+          id: f.id,
           friendId: friend.id,
-          name: friend.fullName,
+          name: friend.full_name,
           avatar: friend.avatar,
-          lastMessage: "No messages yet", // You'd fetch this from messages table later
+          lastMessage: lastMsg, // ✅ Now dynamic!
         };
       });
       setChats(formattedChats);
@@ -46,18 +61,19 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     fetchChats();
 
-    // Real-time listener: Refresh list when a friendship is updated/added
     const channel = supabase
       .channel("friendship_updates")
-      .on("postgres_changes", { event: "*", table: "friendships" }, () =>
-        fetchChats(),
+      .on(
+        "postgres_changes" as any,
+        { event: "*", table: "friendships", schema: "public" },
+        () => fetchChats(),
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user?.id]);
 
   return (
     <ChatContext.Provider value={{ chats, loading, refreshChats: fetchChats }}>

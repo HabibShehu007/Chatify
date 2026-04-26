@@ -8,22 +8,12 @@ import ChatRequests from "../components/ChatRequests";
 import FindMoreFriends from "../components/FindMoreFriends";
 import { FiSearch } from "react-icons/fi";
 
+// Note: Keeping the export interface in case other components still import it from here
 export interface User {
   id: string;
   fullName: string;
   avatar?: string | null;
 }
-
-const chatRequests: User[] = [
-  { id: "1", fullName: "Alice Johnson", avatar: null },
-  { id: "2", fullName: "Bob Smith", avatar: null },
-];
-
-const suggestedFriends: User[] = [
-  { id: "3", fullName: "Charlie Brown", avatar: null },
-  { id: "4", fullName: "Diana Prince", avatar: null },
-  { id: "5", fullName: "Ethan Hunt", avatar: null },
-];
 
 export default function Friends() {
   const [activeTab, setActiveTab] = useState<"requests" | "suggestions">(
@@ -67,20 +57,20 @@ export default function Friends() {
         <div className="md:hidden flex justify-center space-x-4 mb-6">
           <button
             onClick={() => setActiveTab("requests")}
-            className={`px-4 py-2 rounded-full ${
+            className={`px-4 py-2 rounded-full font-bold transition-all ${
               activeTab === "requests"
-                ? "bg-blue-600 text-white"
-                : "bg-gray-200 dark:bg-gray-700"
+                ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
+                : "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
             }`}
           >
             Chat Requests
           </button>
           <button
             onClick={() => setActiveTab("suggestions")}
-            className={`px-4 py-2 rounded-full ${
+            className={`px-4 py-2 rounded-full font-bold transition-all ${
               activeTab === "suggestions"
-                ? "bg-blue-600 text-white"
-                : "bg-gray-200 dark:bg-gray-700"
+                ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
+                : "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
             }`}
           >
             Find More Friends
@@ -91,12 +81,14 @@ export default function Friends() {
         <div className="md:grid md:grid-cols-2 md:divide-x md:divide-gray-300 dark:md:divide-gray-700 gap-6">
           {(activeTab === "requests" || window.innerWidth >= 768) && (
             <div className="pr-0 md:pr-6">
-              <ChatRequests users={chatRequests} search={search} />
+              {/* ✅ No more passing mock 'users' prop */}
+              <ChatRequests search={search} />
             </div>
           )}
           {(activeTab === "suggestions" || window.innerWidth >= 768) && (
             <div className="pl-0 md:pl-6">
-              <FindMoreFriends users={suggestedFriends} search={search} />
+              {/* ✅ No more passing mock 'users' prop */}
+              <FindMoreFriends search={search} />
             </div>
           )}
         </div>

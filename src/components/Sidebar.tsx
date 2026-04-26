@@ -1,12 +1,20 @@
 // src/components/Sidebar.tsx
-import { FaCog, FaUsers, FaComments, FaUserCircle } from "react-icons/fa";
+import {
+  FaCog,
+  FaUsers,
+  FaComments,
+  FaUserCircle,
+  FaBell,
+} from "react-icons/fa";
 import { Link, useLocation } from "react-router-dom";
 import { FiSearch } from "react-icons/fi";
 import { useUser } from "../context/UserContext";
-import ThemeToggler from "./ThemeToggler"; // ✅ Integrated the toggler
+import { useSocial } from "../context/SocialContext"; // ✅ Added to track requests
+import ThemeToggler from "./ThemeToggler";
 
 export default function Sidebar() {
   const { user, loading } = useUser();
+  const { requests } = useSocial(); // ✅ Get pending requests list
   const location = useLocation();
 
   const getInitials = (name: string) => {
@@ -73,9 +81,30 @@ export default function Sidebar() {
           )}
         </Link>
 
-        {/* Find Friends (Search) Link ✅ Updated Icon */}
+        {/* Notifications/Requests Bell - Desktop Only Sidebar Position */}
+        <Link to="/notifications" className={getLinkStyle("/notifications")}>
+          <div className="relative">
+            <FaBell size={22} />
+            {requests.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 w-3 h-3 rounded-full border-2 border-white dark:border-gray-950" />
+            )}
+          </div>
+          <span className="text-[10px] font-bold mt-1 uppercase tracking-tighter">
+            Notification
+          </span>
+        </Link>
+
+        {/* Find Friends (Search) Link ✅ Added Badge for Requests */}
         <Link to="/friends" className={getLinkStyle("/friends")}>
-          <FiSearch size={22} />
+          <div className="relative">
+            <FiSearch size={22} />
+            {/* Notification Counter */}
+            {requests.length > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-950 animate-bounce">
+                {requests.length}
+              </span>
+            )}
+          </div>
           <span className="text-[10px] font-bold mt-1 uppercase tracking-tighter">
             Search
           </span>
@@ -84,7 +113,7 @@ export default function Sidebar() {
           )}
         </Link>
 
-        {/* Groups Link ✅ Updated Icon */}
+        {/* Groups Link */}
         <Link to="/groups" className={getLinkStyle("/groups")}>
           <FaUsers size={22} />
           <span className="text-[10px] font-bold mt-1 uppercase tracking-tighter">
@@ -109,8 +138,7 @@ export default function Sidebar() {
 
       {/* Bottom Section: Theme & Profile */}
       <div className="flex flex-col items-center space-y-6">
-        <ThemeToggler />{" "}
-        {/* ✅ Fixes the "not working" issue by giving it a permanent home */}
+        <ThemeToggler />
         <Link
           to="/profile"
           className="flex flex-col items-center transition-transform active:scale-90"

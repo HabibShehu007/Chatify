@@ -1,8 +1,9 @@
 // src/components/BottomNav.tsx
 import { FaUserCircle, FaCog, FaUsers, FaComments } from "react-icons/fa";
-import { FiSearch } from "react-icons/fi"; // ✅ Added for Search/Friends
+import { FiSearch } from "react-icons/fi";
 import { Link, useLocation } from "react-router-dom";
 import { useUser } from "../context/UserContext";
+import { useSocial } from "../context/SocialContext"; // ✅ Added to track requests
 
 interface BottomNavProps {
   show: boolean;
@@ -10,6 +11,7 @@ interface BottomNavProps {
 
 export default function BottomNav({ show }: BottomNavProps) {
   const { user, loading } = useUser();
+  const { requests } = useSocial(); // ✅ Get the requests list
   const location = useLocation();
 
   if (!show) return null;
@@ -70,9 +72,16 @@ export default function BottomNav({ show }: BottomNavProps) {
         )}
       </Link>
 
-      {/* Friends/Search ✅ Updated Icon to FiSearch */}
+      {/* Friends/Search ✅ Added Badge logic */}
       <Link to="/friends" className={getLinkStyle("/friends")}>
-        <FiSearch className="text-xl" />
+        <div className="relative">
+          <FiSearch className="text-xl" />
+          {requests.length > 0 && (
+            <span className="absolute -top-1.5 -right-2 bg-red-500 text-white text-[8px] font-black w-3.5 h-3.5 rounded-full flex items-center justify-center border border-white dark:border-gray-900 animate-bounce">
+              {requests.length}
+            </span>
+          )}
+        </div>
         <span className="text-[10px] font-bold mt-1 uppercase tracking-tighter">
           Search
         </span>
@@ -81,7 +90,7 @@ export default function BottomNav({ show }: BottomNavProps) {
         )}
       </Link>
 
-      {/* Groups ✅ Added Groups Link with FaUsers */}
+      {/* Groups */}
       <Link to="/groups" className={getLinkStyle("/groups")}>
         <FaUsers className="text-xl" />
         <span className="text-[10px] font-bold mt-1 uppercase tracking-tighter">
