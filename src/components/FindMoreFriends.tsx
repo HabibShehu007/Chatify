@@ -47,7 +47,6 @@ export default function FindMoreFriends({ search }: FindMoreFriendsProps) {
             const userData: User = {
               id: u.id,
               fullName: u.full_name,
-              avatar: u.avatar,
             };
 
             return (
