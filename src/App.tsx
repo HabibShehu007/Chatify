@@ -2,6 +2,7 @@
 import { ThemeProvider } from "./context/ThemeContext";
 import { UserProvider } from "./context/UserContext";
 import { SocialProvider } from "./context/SocialContext"; // ✅ 1. Import SocialProvider
+import { ChatProvider } from "./context/ChatContext";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Onboarding from "./Pages/Onboarding";
 // Auth
@@ -11,7 +12,7 @@ import Login from "./Pages/Login";
 import Dashboard from "./Pages/Dashboard";
 import Friends from "./Pages/Friends";
 import Profile from "./Pages/Profile";
-import { ChatProvider } from "./context/ChatContext";
+import Notifications from "./Pages/Notifications";
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/friends" element={<Friends />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/notifications" element={<Notifications />} />
               </Routes>
             </Router>
           </ChatProvider>

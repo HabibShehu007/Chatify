@@ -4,96 +4,81 @@ import { useTheme } from "../context/ThemeContext";
 import Sidebar from "../components/Sidebar";
 import BottomNav from "../components/BottomNav";
 import ThemeToggler from "../components/ThemeToggler";
-import ChatRequests from "../components/ChatRequests";
-import FindMoreFriends from "../components/FindMoreFriends";
-import { FiSearch } from "react-icons/fi";
-
-// Note: Keeping the export interface in case other components still import it from here
-export interface User {
-  id: string;
-  fullName: string;
-  avatar?: string | null;
-}
+import FindMoreFriends from "../components/FindMoreFriends"; // This is your discovery component
+import { FiSearch, FiUsers } from "react-icons/fi";
 
 export default function Friends() {
-  const [activeTab, setActiveTab] = useState<"requests" | "suggestions">(
-    "requests",
-  );
   const [search, setSearch] = useState("");
   const { theme } = useTheme();
 
   return (
     <div
-      className={`min-h-screen flex flex-col md:flex-row ${
+      className={`min-h-screen flex flex-col md:flex-row transition-colors duration-500 ${
         theme === "light"
-          ? "bg-gray-50 text-gray-800"
-          : "bg-gray-900 text-white"
+          ? "bg-[#f8fafc] text-slate-900"
+          : "bg-gray-800 text-white"
       }`}
     >
       <Sidebar />
 
-      <div className="flex-1 p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-            Find Friends
-          </h1>
+      <div className="flex-1 p-6 md:p-10 max-w-6xl mx-auto w-full">
+        {/* Header Section */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <div className="bg-blue-600 p-3 rounded-2xl shadow-lg shadow-blue-600/20">
+              <FiUsers className="text-white text-xl" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-black tracking-tighter uppercase">
+                Discovery
+              </h1>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                Find your next connection
+              </p>
+            </div>
+          </div>
           <ThemeToggler />
         </div>
 
-        {/* Search bar */}
-        <div className="flex items-center mb-6 bg-gray-100 dark:bg-gray-800 rounded-full px-3 py-2 shadow-sm">
-          <FiSearch className="text-gray-500 dark:text-gray-400 mr-2" />
-          <input
-            type="text"
-            placeholder="Search users..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 bg-transparent focus:outline-none dark:text-white"
-          />
-        </div>
-
-        {/* Mobile filter buttons */}
-        <div className="md:hidden flex justify-center space-x-4 mb-6">
-          <button
-            onClick={() => setActiveTab("requests")}
-            className={`px-4 py-2 rounded-full font-bold transition-all ${
-              activeTab === "requests"
-                ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
-                : "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
+        {/* Search Bar - Stylized to match Dashboard */}
+        <div className="mb-10">
+          <div
+            className={`flex items-center rounded-[2rem] px-6 py-4 transition-all ${
+              theme === "light"
+                ? "bg-white border border-slate-100 shadow-sm focus-within:shadow-md focus-within:border-blue-200"
+                : "bg-gray-900 border border-gray-800 focus-within:border-blue-900"
             }`}
           >
-            Chat Requests
-          </button>
-          <button
-            onClick={() => setActiveTab("suggestions")}
-            className={`px-4 py-2 rounded-full font-bold transition-all ${
-              activeTab === "suggestions"
-                ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
-                : "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-            }`}
-          >
-            Find More Friends
-          </button>
+            <FiSearch className="text-slate-400 mr-3 text-lg" />
+            <input
+              type="text"
+              placeholder="Search by name or username..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="flex-1 bg-transparent focus:outline-none text-sm font-medium"
+            />
+          </div>
         </div>
 
-        {/* Desktop layout */}
-        <div className="md:grid md:grid-cols-2 md:divide-x md:divide-gray-300 dark:md:divide-gray-700 gap-6">
-          {(activeTab === "requests" || window.innerWidth >= 768) && (
-            <div className="pr-0 md:pr-6">
-              {/* ✅ No more passing mock 'users' prop */}
-              <ChatRequests search={search} />
-            </div>
-          )}
-          {(activeTab === "suggestions" || window.innerWidth >= 768) && (
-            <div className="pl-0 md:pl-6">
-              {/* ✅ No more passing mock 'users' prop */}
-              <FindMoreFriends search={search} />
-            </div>
-          )}
+        {/* Discovery Grid */}
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-blue-600">
+              Suggested for you
+            </h2>
+            <div className="h-[1px] flex-1 bg-slate-200 dark:bg-gray-800 ml-4"></div>
+          </div>
+
+          {/* ✅ This component now handles the full width.
+             Make sure inside FindMoreFriends you filter based on the 'search' prop.
+          */}
+          <div className="min-h-[400px]">
+            <FindMoreFriends search={search} />
+          </div>
         </div>
       </div>
 
+      {/* Show BottomNav on mobile when no specific chat is open */}
       <BottomNav show={true} />
     </div>
   );

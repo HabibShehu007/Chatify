@@ -17,6 +17,7 @@ interface SocialContextType {
   loading: boolean;
   sendRequest: (targetId: string) => Promise<void>;
   acceptRequest: (requestId: string) => Promise<void>;
+  rejectRequest: (requestId: string) => Promise<void>;
 }
 
 const SocialContext = createContext<SocialContextType | undefined>(undefined);
@@ -101,6 +102,10 @@ export function SocialProvider({ children }: { children: React.ReactNode }) {
       .eq("id", requestId);
   };
 
+  const rejectRequest = async (requestId: string) => {
+    await supabase.from("friendships").delete().eq("id", requestId);
+  };
+
   return (
     <SocialContext.Provider
       value={{
@@ -110,6 +115,7 @@ export function SocialProvider({ children }: { children: React.ReactNode }) {
         loading,
         sendRequest,
         acceptRequest,
+        rejectRequest,
       }}
     >
       {children}
