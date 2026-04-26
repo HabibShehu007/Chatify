@@ -1,9 +1,13 @@
 // src/pages/Dashboard.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react"; // ✅ Added useEffect
 import { useTheme } from "../context/ThemeContext";
-import { FaComments, FaPaperclip, FaMicrophone } from "react-icons/fa";
+import {
+  FaPaperclip,
+  FaMicrophone,
+  FaPaperPlane,
+  FaComments,
+} from "react-icons/fa";
 import { FiSearch, FiArrowLeft } from "react-icons/fi";
-import ThemeToggler from "../components/ThemeToggler";
 import Sidebar from "../components/Sidebar";
 import BottomNav from "../components/BottomNav";
 
@@ -11,13 +15,13 @@ export default function Dashboard() {
   const { theme } = useTheme();
   const [selectedChat, setSelectedChat] = useState<string | null>(null);
 
+  // Mock data - set to empty array [] to test the "Global" empty state
   const chats = [
     {
       id: "1",
       name: "Alice",
       lastMessage: "Hey, how are you?",
       time: "10:45",
-      unread: 2,
       avatar: null,
     },
     {
@@ -25,178 +29,186 @@ export default function Dashboard() {
       name: "Bob",
       lastMessage: "Let’s meet tomorrow.",
       time: "09:30",
-      unread: 0,
-      avatar: null,
-    },
-    {
-      id: "3",
-      name: "Charlie",
-      lastMessage: "Got the files.",
-      time: "Yesterday",
-      unread: 5,
       avatar: null,
     },
   ];
 
-  const getAvatar = (chat: any) => {
-    if (chat?.avatar) {
-      return (
-        <img
-          src={chat.avatar}
-          alt={chat.name}
-          className="w-10 h-10 rounded-full"
-        />
-      );
-    }
-    return (
-      <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">
-        {chat?.name?.charAt(0)}
-      </div>
-    );
-  };
+  // ✅ Handle ESC key to deselect chat (Desktop only feel)
+  useEffect(() => {
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSelectedChat(null);
+    };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, []);
+
+  const getAvatar = (chat: any) => (
+    <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold shadow-md">
+      {chat?.name?.charAt(0)}
+    </div>
+  );
+
+  const activeChat = chats.find((c) => c.id === selectedChat);
+  const isChatListEmpty = chats.length === 0;
 
   return (
     <div
-      className={`min-h-screen flex flex-col md:flex-row ${theme === "light" ? "bg-white" : "bg-gray-800 text-white"}`}
+      className={`min-h-screen flex flex-col md:flex-row ${
+        theme === "light"
+          ? "bg-gray-50 text-gray-800"
+          : "bg-gray-950 text-white"
+      }`}
     >
-      {/* Left Sidebar (desktop only) */}
       <Sidebar />
 
-      {/* Chat List (desktop) */}
+      {/* Chat List Section */}
       <div
-        className={`flex-1 flex flex-col ${selectedChat ? "hidden md:flex" : "flex"}`}
+        className={`flex-1 md:max-w-sm flex flex-col border-r ${
+          theme === "light"
+            ? "bg-white border-gray-200"
+            : "bg-gray-900 border-gray-800"
+        } ${selectedChat ? "hidden md:flex" : "flex"}`}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4">
-          <h1 className="text-xl font-bold text-blue-600 dark:text-blue-400">
+        <div className="p-4 flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-blue-600 tracking-tight">
             Chatify
           </h1>
-          <ThemeToggler />
         </div>
 
-        {/* Search bar */}
-        <div className="p-3 flex items-center">
-          <div className="flex items-center w-full bg-gray-100 dark:bg-blue-950 rounded-full px-3 py-2 shadow-sm">
-            <FiSearch className="text-gray-500 dark:text-gray-400 mr-2" />
+        <div className="px-4 pb-4">
+          <div
+            className={`flex items-center rounded-2xl px-4 py-2.5 ${
+              theme === "light" ? "bg-gray-100" : "bg-blue-950/40"
+            }`}
+          >
+            <FiSearch className="text-gray-400 mr-2" />
             <input
               type="text"
               placeholder="Search chats..."
-              className="flex-1 bg-transparent focus:outline-none dark:text-white"
+              className="bg-transparent focus:outline-none w-full text-sm"
             />
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="flex justify-around p-2 text-sm">
-          {["All", "Unread", "Favourites", "Groups"].map((filter) => (
-            <button
-              key={filter}
-              className="px-3 py-1 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/40 transition"
-            >
-              {filter}
-            </button>
-          ))}
-        </div>
-
-        {/* Chat list */}
         <div className="flex-1 overflow-y-auto">
-          {chats.map((chat) => (
-            <div
-              key={chat.id}
-              onClick={() => setSelectedChat(chat.id)}
-              className={`flex items-center justify-between p-4 cursor-pointer transition ${
-                theme === "light" ? "hover:bg-gray-100" : "hover:bg-blue-900/40"
-              } ${selectedChat === chat.id ? "bg-gray-200 dark:bg-blue-800" : ""}`}
-            >
-              <div className="flex items-center space-x-3">
+          {isChatListEmpty ? (
+            /* ✅ Mobile/Desktop: Show this ONLY if there are 0 chats total */
+            <div className="flex flex-col items-center justify-center h-full p-8 text-center space-y-4">
+              <div className="bg-blue-100 dark:bg-blue-900/30 p-4 rounded-full">
+                <FiSearch className="text-4xl text-blue-600" />
+              </div>
+              <p className="text-sm text-gray-500 font-medium">
+                No conversations yet. Tap the Search icon to find friends!
+              </p>
+            </div>
+          ) : (
+            chats.map((chat) => (
+              <div
+                key={chat.id}
+                onClick={() => setSelectedChat(chat.id)}
+                className={`flex items-center gap-4 px-4 py-4 cursor-pointer transition ${
+                  selectedChat === chat.id
+                    ? "bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-600"
+                    : "hover:bg-gray-100 dark:hover:bg-gray-800/40 border-l-4 border-transparent"
+                }`}
+              >
                 {getAvatar(chat)}
-                <div>
-                  <div className="font-semibold">{chat.name}</div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                    {chat.lastMessage}
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="font-bold truncate">{chat.name}</span>
+                    <span className="text-[10px] text-gray-400">
+                      {chat.time}
+                    </span>
                   </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                    {chat.lastMessage}
+                  </p>
                 </div>
               </div>
-              <div className="text-right">
-                <div className="text-xs text-gray-400">{chat.time}</div>
-                {chat.unread > 0 && (
-                  <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
-                    {chat.unread}
-                  </span>
-                )}
-              </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
 
-      {/* Inbox */}
+      {/* Inbox Section */}
       <div
-        className={`flex-1 flex flex-col ${selectedChat ? "flex" : "hidden md:flex"}`}
+        className={`flex-1 flex flex-col ${selectedChat ? "flex" : "hidden md:flex"} ${
+          theme === "light" ? "bg-white" : "bg-gray-800"
+        }`}
       >
         {selectedChat ? (
           <>
-            {/* Chat Header */}
-            <div className="flex items-center space-x-3 p-4">
-              <button
-                className="md:hidden"
-                onClick={() => setSelectedChat(null)}
+            {/* Active Chat Header */}
+            <div
+              className={`flex items-center justify-between p-4 border-b ${
+                theme === "light"
+                  ? "border-gray-200 bg-white"
+                  : "border-gray-700 bg-gray-900"
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <button
+                  className="md:hidden"
+                  onClick={() => setSelectedChat(null)}
+                >
+                  <FiArrowLeft className="text-2xl" />
+                </button>
+                {getAvatar(activeChat)}
+                <div className="flex flex-col text-left">
+                  <span className="font-bold leading-tight">
+                    {activeChat?.name}
+                  </span>
+                  <span className="text-[10px] text-green-500 font-bold uppercase">
+                    Online
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex-1 p-6 overflow-y-auto space-y-4">
+              {/* Messages */}
+            </div>
+
+            {/* Input Bar */}
+            <div
+              className={`p-4 ${theme === "light" ? "bg-white" : "bg-gray-900"}`}
+            >
+              <div
+                className={`flex items-center gap-3 p-2 px-4 rounded-2xl ${theme === "light" ? "bg-gray-100" : "bg-gray-800"}`}
               >
-                <FiArrowLeft className="text-2xl" />
-              </button>
-              {getAvatar(chats.find((c) => c.id === selectedChat))}
-              <span className="font-bold">
-                {chats.find((c) => c.id === selectedChat)?.name}
-              </span>
-            </div>
-
-            {/* Messages Area */}
-            <div className="flex-1 p-4 overflow-y-auto space-y-3">
-              <div>
-                <span className="bg-blue-600 text-black dark:text-white px-3 py-2 rounded-lg inline-block">
-                  Hello! This is a sample message.
-                </span>
+                <FaPaperclip className="text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Type a message..."
+                  className="flex-1 bg-transparent focus:outline-none text-sm"
+                />
+                <button className="bg-blue-600 text-white p-2.5 rounded-xl">
+                  <FaPaperPlane size={14} />
+                </button>
               </div>
-              <div className="text-right">
-                <span className="bg-blue-300 text-black dark:text-white px-3 py-2 rounded-lg inline-block">
-                  Hi, nice to chat with you!
-                </span>
-              </div>
-            </div>
-
-            {/* Message Input */}
-            <div className="p-4 flex items-center space-x-3">
-              <button className="text-gray-500 dark:text-gray-400 hover:text-blue-600">
-                <FaPaperclip className="text-xl" />
-              </button>
-              <input
-                type="text"
-                placeholder="Type a message..."
-                className="flex-1 border rounded-full px-3 py-2 focus:outline-none dark:bg-blue-950 dark:text-white"
-              />
-              <button className="text-gray-500 dark:text-gray-400 hover:text-blue-600">
-                <FaMicrophone className="text-xl" />
-              </button>
-              <button className="bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 transition">
-                Send
-              </button>
             </div>
           </>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-gray-500 dark:text-gray-400 space-y-4">
-            <div className="bg-blue-100 dark:bg-blue-900 p-6 rounded-full">
-              <FaComments className="text-blue-600 dark:text-blue-400 text-6xl" />
+          /* ✅ Desktop Empty State (SelectedChat is null) */
+          <div className="hidden md:flex flex-1 flex-col items-center justify-center space-y-4 px-6 text-center bg-gray-50 dark:bg-gray-950/50">
+            <div className="bg-white dark:bg-gray-900 p-8 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-800 flex flex-col items-center">
+              <FaComments className="text-6xl text-blue-600/20 mb-4" />
+              <h2 className="text-xl font-bold">
+                {isChatListEmpty
+                  ? "Start a Conversation"
+                  : "Chatify for Desktop"}
+              </h2>
+              <p className="text-gray-500 dark:text-gray-400 max-w-xs mt-2">
+                {isChatListEmpty
+                  ? "Tap the search icon in the sidebar to find friends and start messaging."
+                  : "Select a chat from your list to begin a conversation. Press 'Esc' to close a chat."}
+              </p>
             </div>
-            <h2 className="text-xl font-bold">Welcome to Chatify</h2>
-            <p className="text-center max-w-md">
-              Select a conversation from the chat list to start messaging. Your
-              chats will appear here.
-            </p>
           </div>
         )}
       </div>
 
-      {/* Bottom Nav (mobile only, only on chat list) */}
+      {/* Mobile Bottom Nav - Only show if no chat is open */}
       <BottomNav show={selectedChat === null} />
     </div>
   );

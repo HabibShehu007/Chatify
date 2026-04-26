@@ -1,18 +1,19 @@
 // src/components/BottomNav.tsx
 import { FaUserCircle, FaCog, FaUsers, FaComments } from "react-icons/fa";
-import { Link } from "react-router-dom";
-import { useUser } from "../context/UserContext"; // ✅ 1. Import the hook
+import { FiSearch } from "react-icons/fi"; // ✅ Added for Search/Friends
+import { Link, useLocation } from "react-router-dom";
+import { useUser } from "../context/UserContext";
 
 interface BottomNavProps {
   show: boolean;
 }
 
 export default function BottomNav({ show }: BottomNavProps) {
-  const { user, loading } = useUser(); // ✅ 2. Grab user data
+  const { user, loading } = useUser();
+  const location = useLocation();
 
   if (!show) return null;
 
-  // ✅ 3. Initials helper (same logic as sidebar)
   const getInitials = (name: string) => {
     const names = name.trim().split(" ");
     if (names.length >= 2) {
@@ -21,66 +22,96 @@ export default function BottomNav({ show }: BottomNavProps) {
     return names[0].charAt(0).toUpperCase();
   };
 
+  const getLinkStyle = (path: string) => {
+    const isActive = location.pathname === path;
+    return `relative flex flex-col items-center justify-center flex-1 py-1 transition-all duration-300 ${
+      isActive ? "text-blue-600 scale-110" : "text-gray-500 dark:text-gray-400"
+    }`;
+  };
+
   const renderProfileIcon = () => {
-    if (loading) {
+    const isActive = location.pathname === "/profile";
+    if (loading)
       return (
-        <div className="w-7 h-7 rounded-full bg-gray-300 animate-pulse mb-1" />
+        <div className="w-6 h-6 rounded-full bg-gray-300 dark:bg-gray-700 animate-pulse mb-1" />
       );
-    }
 
-    if (user?.avatar) {
-      return (
-        <img
-          src={user.avatar}
-          alt={user.fullName}
-          className="w-7 h-7 rounded-full object-cover mb-1 border border-gray-200 dark:border-blue-700"
-        />
-      );
-    }
-
-    if (user?.fullName) {
-      return (
-        <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-[10px] mb-1 shadow-sm">
-          {getInitials(user.fullName)}
-        </div>
-      );
-    }
-
-    return <FaUserCircle className="text-2xl mb-1" />;
+    return (
+      <div
+        className={`p-0.5 rounded-full transition-all border-2 ${
+          isActive ? "border-blue-600" : "border-transparent"
+        }`}
+      >
+        {user?.avatar ? (
+          <img
+            src={user.avatar}
+            alt={user.fullName}
+            className="w-6 h-6 rounded-full object-cover shadow-sm"
+          />
+        ) : (
+          <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-[8px]">
+            {user?.fullName ? getInitials(user.fullName) : <FaUserCircle />}
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-gray-100 dark:bg-blue-950 border-t border-gray-200 dark:border-blue-800 flex justify-around py-2">
-      <Link
-        to="/dashboard"
-        className="flex flex-col items-center text-sm text-gray-700 dark:text-white hover:text-blue-600 transition"
-      >
-        <FaComments className="text-2xl mb-1" />
-        Chat
-      </Link>
-      <Link
-        to="/friends"
-        className="flex flex-col items-center text-sm text-gray-700 dark:text-white hover:text-blue-600 transition"
-      >
-        <FaUsers className="text-2xl mb-1" />
-        Friends
+    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border-t border-gray-200 dark:border-gray-800 flex justify-around items-center h-16 pb-safe shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
+      {/* Chat */}
+      <Link to="/dashboard" className={getLinkStyle("/dashboard")}>
+        <FaComments className="text-xl" />
+        <span className="text-[10px] font-bold mt-1 uppercase tracking-tighter">
+          Chat
+        </span>
+        {location.pathname === "/dashboard" && (
+          <div className="absolute -top-1 w-8 h-1 bg-blue-600 rounded-full" />
+        )}
       </Link>
 
-      {/* ✅ Dynamic Profile Link */}
-      <Link
-        to="/profile"
-        className="flex flex-col items-center text-sm text-gray-700 dark:text-white hover:text-blue-600 transition"
-      >
+      {/* Friends/Search ✅ Updated Icon to FiSearch */}
+      <Link to="/friends" className={getLinkStyle("/friends")}>
+        <FiSearch className="text-xl" />
+        <span className="text-[10px] font-bold mt-1 uppercase tracking-tighter">
+          Search
+        </span>
+        {location.pathname === "/friends" && (
+          <div className="absolute -top-1 w-8 h-1 bg-blue-600 rounded-full" />
+        )}
+      </Link>
+
+      {/* Groups ✅ Added Groups Link with FaUsers */}
+      <Link to="/groups" className={getLinkStyle("/groups")}>
+        <FaUsers className="text-xl" />
+        <span className="text-[10px] font-bold mt-1 uppercase tracking-tighter">
+          Groups
+        </span>
+        {location.pathname === "/groups" && (
+          <div className="absolute -top-1 w-8 h-1 bg-blue-600 rounded-full" />
+        )}
+      </Link>
+
+      {/* Profile */}
+      <Link to="/profile" className={getLinkStyle("/profile")}>
         {renderProfileIcon()}
-        Profile
+        <span className="text-[10px] font-bold uppercase tracking-tighter">
+          Me
+        </span>
+        {location.pathname === "/profile" && (
+          <div className="absolute -top-1 w-8 h-1 bg-blue-600 rounded-full" />
+        )}
       </Link>
 
-      <Link
-        to="/settings"
-        className="flex flex-col items-center text-sm text-gray-700 dark:text-white hover:text-blue-600 transition"
-      >
-        <FaCog className="text-2xl mb-1" />
-        Settings
+      {/* Settings */}
+      <Link to="/settings" className={getLinkStyle("/settings")}>
+        <FaCog className="text-xl" />
+        <span className="text-[10px] font-bold mt-1 uppercase tracking-tighter">
+          Config
+        </span>
+        {location.pathname === "/settings" && (
+          <div className="absolute -top-1 w-8 h-1 bg-blue-600 rounded-full" />
+        )}
       </Link>
     </div>
   );

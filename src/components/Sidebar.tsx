@@ -1,12 +1,14 @@
 // src/components/Sidebar.tsx
 import { FaCog, FaUsers, FaComments, FaUserCircle } from "react-icons/fa";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import { FiSearch } from "react-icons/fi";
 import { useUser } from "../context/UserContext";
+import ThemeToggler from "./ThemeToggler"; // ✅ Integrated the toggler
 
 export default function Sidebar() {
   const { user, loading } = useUser();
+  const location = useLocation();
 
-  // ✅ Helper to get initials (e.g., "Habib Shehu" -> "HS")
   const getInitials = (name: string) => {
     const names = name.trim().split(" ");
     if (names.length >= 2) {
@@ -15,67 +17,116 @@ export default function Sidebar() {
     return names[0].charAt(0).toUpperCase();
   };
 
+  const getLinkStyle = (path: string) => {
+    const isActive = location.pathname === path;
+    return `relative flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all duration-300 ${
+      isActive
+        ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
+        : "text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600"
+    }`;
+  };
+
   const renderProfileIcon = () => {
-    if (loading) {
+    const isActive = location.pathname === "/profile";
+    if (loading)
       return (
         <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
       );
-    }
 
-    if (user?.avatar) {
-      return (
-        <img
-          src={user.avatar}
-          alt={user.fullName}
-          className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-700"
-        />
-      );
-    }
-
-    if (user?.fullName) {
-      return (
-        <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
-          {/* ✅ Now using the initials helper */}
-          {getInitials(user.fullName)}
-        </div>
-      );
-    }
-
-    return <FaUserCircle className="text-4xl text-gray-400" />;
+    return (
+      <div
+        className={`p-1 rounded-full transition-all border-2 ${
+          isActive ? "border-blue-600 scale-110" : "border-transparent"
+        }`}
+      >
+        {user?.avatar ? (
+          <img
+            src={user.avatar}
+            alt={user.fullName}
+            className="w-10 h-10 rounded-full object-cover shadow-sm"
+          />
+        ) : (
+          <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-xs">
+            {user?.fullName ? (
+              getInitials(user.fullName)
+            ) : (
+              <FaUserCircle size={24} />
+            )}
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
-    <div className="hidden md:flex w-20 flex-col justify-between border-r border-gray-200 dark:border-gray-800">
-      <div className="flex flex-col items-center space-y-6 mt-6">
-        <Link
-          to="/dashboard"
-          className="flex flex-col items-center text-sm hover:text-blue-600 transition"
-        >
-          <FaComments className="text-2xl mb-1" />
-          Chat
+    <div className="hidden md:flex w-20 flex-col justify-between items-center py-8 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950">
+      {/* Top Section: Navigation */}
+      <div className="flex flex-col items-center space-y-6 w-full">
+        {/* Chat Link */}
+        <Link to="/dashboard" className={getLinkStyle("/dashboard")}>
+          <FaComments size={22} />
+          <span className="text-[10px] font-bold mt-1 uppercase tracking-tighter">
+            Chat
+          </span>
+          {location.pathname === "/dashboard" && (
+            <div className="absolute -left-3 w-1.5 h-8 bg-blue-600 rounded-r-full" />
+          )}
         </Link>
-        <Link
-          to="/friends"
-          className="flex flex-col items-center text-sm hover:text-blue-600 transition"
-        >
-          <FaUsers className="text-2xl mb-1" />
-          Friends
+
+        {/* Find Friends (Search) Link ✅ Updated Icon */}
+        <Link to="/friends" className={getLinkStyle("/friends")}>
+          <FiSearch size={22} />
+          <span className="text-[10px] font-bold mt-1 uppercase tracking-tighter">
+            Search
+          </span>
+          {location.pathname === "/friends" && (
+            <div className="absolute -left-3 w-1.5 h-8 bg-blue-600 rounded-r-full" />
+          )}
         </Link>
-        <Link
-          to="/settings"
-          className="flex flex-col items-center text-sm hover:text-blue-600 transition"
-        >
-          <FaCog className="text-2xl mb-1" />
-          Settings
+
+        {/* Groups Link ✅ Updated Icon */}
+        <Link to="/groups" className={getLinkStyle("/groups")}>
+          <FaUsers size={22} />
+          <span className="text-[10px] font-bold mt-1 uppercase tracking-tighter">
+            Groups
+          </span>
+          {location.pathname === "/groups" && (
+            <div className="absolute -left-3 w-1.5 h-8 bg-blue-600 rounded-r-full" />
+          )}
+        </Link>
+
+        {/* Settings Link */}
+        <Link to="/settings" className={getLinkStyle("/settings")}>
+          <FaCog size={22} />
+          <span className="text-[10px] font-bold mt-1 uppercase tracking-tighter">
+            Config
+          </span>
+          {location.pathname === "/settings" && (
+            <div className="absolute -left-3 w-1.5 h-8 bg-blue-600 rounded-r-full" />
+          )}
         </Link>
       </div>
 
-      <Link
-        to="/profile"
-        className="p-4 mb-4 cursor-pointer hover:opacity-80 flex justify-center transition"
-      >
-        {renderProfileIcon()}
-      </Link>
+      {/* Bottom Section: Theme & Profile */}
+      <div className="flex flex-col items-center space-y-6">
+        <ThemeToggler />{" "}
+        {/* ✅ Fixes the "not working" issue by giving it a permanent home */}
+        <Link
+          to="/profile"
+          className="flex flex-col items-center transition-transform active:scale-90"
+        >
+          {renderProfileIcon()}
+          <span
+            className={`text-[10px] font-bold mt-2 uppercase ${
+              location.pathname === "/profile"
+                ? "text-blue-600"
+                : "text-gray-400"
+            }`}
+          >
+            Me
+          </span>
+        </Link>
+      </div>
     </div>
   );
 }
