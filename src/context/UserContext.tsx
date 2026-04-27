@@ -4,31 +4,24 @@ import type { ReactNode } from "react";
 import { supabase } from "../lib/supabase";
 import type { UserProfile } from "../types/User";
 
-// 1. Define what data our "Brain" will share with the app
 interface UserContextType {
   user: UserProfile | null;
   loading: boolean;
-  refreshUser: () => Promise<void>; // Use this to force-update data (e.g., after a profile edit)
+  refreshUser: () => Promise<void>;
 }
 
-// 2. Create the actual Context
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
-// 3. The Provider component that wraps your app
 export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // The logic to fetch user data from Supabase
   const fetchUser = async () => {
     try {
       setLoading(true);
-
-      // Get the session user from Supabase Auth
       const { data: authData } = await supabase.auth.getUser();
 
       if (authData?.user) {
-        // Get the extra profile info from your 'user_profile' table
         const { data: profile, error } = await supabase
           .from("user_profile")
           .select("*")
@@ -36,15 +29,17 @@ export function UserProvider({ children }: { children: ReactNode }) {
           .single();
 
         if (profile) {
+          // REVAMPED: We use the Table 'id' as the main ID for social filtering
           setUser({
-            id: profile.user_id,
+            id: profile.id, // This matches the "id" column in your database
+            authId: profile.user_id, // Keep this if you need the Auth UUID later
             fullName: profile.full_name,
             username: profile.username,
             phone: profile.phone,
             avatar: profile.avatar,
             createdAt: profile.created_at,
             email: authData.user.email,
-          } as UserProfile);
+          } as any); // Temporary 'any' until you update the UserProfile type
         }
       } else {
         setUser(null);
@@ -58,15 +53,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     fetchUser();
-
-    // 4. Listen for Auth changes (like logging out or logging in)
-    // This makes sure the app reacts instantly if the user session changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_OUT") {
         setUser(null);
-      } else {
+      } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
         fetchUser();
       }
     });
@@ -81,11 +73,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// 5. Custom hook to make using this data super easy
 export const useUser = () => {
   const context = useContext(UserContext);
-  if (!context) {
-    throw new Error("useUser must be used within a UserProvider");
-  }
+  if (!context) throw new Error("useUser must be used within a UserProvider");
   return context;
 };

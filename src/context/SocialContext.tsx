@@ -1,4 +1,10 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
 import { supabase } from "../lib/supabase";
 import { useUser } from "./UserContext";
 
@@ -19,7 +25,6 @@ interface SocialContextType {
 
 const SocialContext = createContext<SocialContextType | undefined>(undefined);
 
-// FIX: We define the Provider as a standard export to satisfy Vite's Fast Refresh
 export function SocialProvider({ children }: { children: React.ReactNode }) {
   const { user } = useUser();
   const [friends, setFriends] = useState<any[]>([]);
@@ -27,12 +32,17 @@ export function SocialProvider({ children }: { children: React.ReactNode }) {
   const [suggestions, setSuggestions] = useState<SocialUser[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchSocialData = async () => {
-    if (!user?.id) return;
+  // Wrapped in useCallback so it doesn't trigger infinite loops in useEffect
+  const fetchSocialData = useCallback(async () => {
+    if (!user?.id) {
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
 
     try {
-      // 1. Fetch Friendships - COMPLETELY STRIPPED BACK TO BASICS
+      // 1. Fetch Friendships - No messages, no extras.
       const { data: relations, error: relError } = await supabase
         .from("friendships")
         .select(
@@ -49,66 +59,77 @@ export function SocialProvider({ children }: { children: React.ReactNode }) {
 
       if (relError) throw relError;
 
-      // 2. Fetch All Other Users
+      // 2. Fetch All Potential Users
       const { data: allUsers, error: userError } = await supabase
         .from("user_profile")
         .select("id, full_name")
-        .neq("id", user.id);
+        .neq("id", user.id); // Database filter using the table ID
 
       if (userError) throw userError;
 
-      // 3. Exclusion Logic
+      // 3. Robust Exclusion Logic
       const excludedIds = new Set<string>();
-      excludedIds.add(user.id);
+      excludedIds.add(String(user.id)); // Force string comparison
 
       relations?.forEach((r) => {
-        excludedIds.add(r.sender_id);
-        excludedIds.add(r.receiver_id);
+        excludedIds.add(String(r.sender_id));
+        excludedIds.add(String(r.receiver_id));
       });
 
       const activeFriends =
         relations?.filter((r) => r.status === "accepted") || [];
       const incomingRequests =
         relations?.filter(
-          (r) => r.status === "pending" && r.receiver_id === user.id,
+          (r) =>
+            r.status === "pending" && String(r.receiver_id) === String(user.id),
         ) || [];
 
       const filteredSuggestions =
-        allUsers?.filter((u) => !excludedIds.has(u.id)) || [];
+        allUsers?.filter((u) => !excludedIds.has(String(u.id))) || [];
 
       setFriends(activeFriends);
       setRequests(incomingRequests);
       setSuggestions(filteredSuggestions as SocialUser[]);
     } catch (err) {
-      console.error("FETCH_ERROR:", err);
+      console.error("SOCIAL_FETCH_RECHECK:", err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id]);
 
   useEffect(() => {
     fetchSocialData();
+
+    // Use a unique channel name to prevent interference with other contexts
     const channel = supabase
-      .channel("social_updates")
+      .channel(`social_realtime_${user?.id}`)
       .on(
         "postgres_changes" as any,
         { event: "*", table: "friendships", schema: "public" },
-        () => fetchSocialData(),
+        () => {
+          console.log("Realtime update triggered...");
+          fetchSocialData();
+        },
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.id]);
+  }, [user?.id, fetchSocialData]);
 
   const sendRequest = async (targetId: string) => {
     if (!user?.id) return;
-    await supabase.from("friendships").insert({
-      sender_id: user.id,
-      receiver_id: targetId,
-      status: "pending",
-    });
+    try {
+      const { error } = await supabase.from("friendships").insert({
+        sender_id: user.id,
+        receiver_id: targetId,
+        status: "pending",
+      });
+      if (error) throw error;
+    } catch (err) {
+      console.error("SEND_REQUEST_ERROR:", err);
+    }
   };
 
   const acceptRequest = async (requestId: string) => {
@@ -139,7 +160,6 @@ export function SocialProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-// FIX: Exporting the hook separately like this is the "Consistent Export" Vite wants
 export const useSocial = () => {
   const context = useContext(SocialContext);
   if (!context) throw new Error("useSocial must be used within SocialProvider");
