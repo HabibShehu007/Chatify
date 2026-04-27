@@ -3,7 +3,9 @@ import { FaUserCircle, FaCog, FaUsers, FaComments } from "react-icons/fa";
 import { FiSearch } from "react-icons/fi";
 import { Link, useLocation } from "react-router-dom";
 import { useUser } from "../context/UserContext";
-import { useSocial } from "../context/SocialContext"; // ✅ Added to track requests
+import { useSocial } from "../context/SocialContext";
+import { useChat } from "../context/ChatContext"; // ✅ IMPORT THIS
+import ThemeToggler from "./ThemeToggler";
 
 interface BottomNavProps {
   show: boolean;
@@ -11,10 +13,16 @@ interface BottomNavProps {
 
 export default function BottomNav({ show }: BottomNavProps) {
   const { user, loading } = useUser();
-  const { requests } = useSocial(); // ✅ Get the requests list
+  const { requests } = useSocial();
+  const { chats } = useChat(); // ✅ GET CHATS
   const location = useLocation();
 
   if (!show) return null;
+
+  // CALCULATE TOTAL UNREAD MESSAGES (Typed to avoid errors)
+  const totalUnreadMessages = chats.reduce((sum: number, chat: any) => {
+    return sum + (chat.unreadCount || 0);
+  }, 0);
 
   const getInitials = (name: string) => {
     const names = name.trim().split(" ");
@@ -61,9 +69,16 @@ export default function BottomNav({ show }: BottomNavProps) {
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border-t border-gray-200 dark:border-gray-800 flex justify-around items-center h-16 pb-safe shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
-      {/* Chat */}
+      {/* Chat ✅ ADDED UNREAD COUNTER */}
       <Link to="/dashboard" className={getLinkStyle("/dashboard")}>
-        <FaComments className="text-xl" />
+        <div className="relative">
+          <FaComments className="text-xl" />
+          {totalUnreadMessages > 0 && (
+            <span className="absolute -top-1.5 -right-2 bg-red-600 text-white text-[8px] font-black w-3.5 h-3.5 rounded-full flex items-center justify-center border border-white dark:border-gray-900 ">
+              {totalUnreadMessages}
+            </span>
+          )}
+        </div>
         <span className="text-[10px] font-bold mt-1 uppercase tracking-tighter">
           Chat
         </span>
@@ -72,7 +87,7 @@ export default function BottomNav({ show }: BottomNavProps) {
         )}
       </Link>
 
-      {/* Friends/Search ✅ Added Badge logic */}
+      {/* Friends/Search */}
       <Link to="/friends" className={getLinkStyle("/friends")}>
         <div className="relative">
           <FiSearch className="text-xl" />

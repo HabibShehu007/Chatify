@@ -9,13 +9,21 @@ import {
 import { Link, useLocation } from "react-router-dom";
 import { FiSearch } from "react-icons/fi";
 import { useUser } from "../context/UserContext";
-import { useSocial } from "../context/SocialContext"; // ✅ Added to track requests
+import { useSocial } from "../context/SocialContext";
+import { useChat } from "../context/ChatContext"; // ✅ IMPORT THIS
 import ThemeToggler from "./ThemeToggler";
 
 export default function Sidebar() {
   const { user, loading } = useUser();
-  const { requests } = useSocial(); // ✅ Get pending requests list
+  const { requests } = useSocial();
+  const { chats } = useChat(); // ✅ GET CHATS
   const location = useLocation();
+
+  // CALCULATE TOTAL UNREAD MESSAGES
+  // This tells TypeScript: 'sum' is a number, and 'chat' is an object with an unreadCount
+  const totalUnreadMessages = chats.reduce((sum: number, chat: any) => {
+    return sum + (chat.unreadCount || 0);
+  }, 0);
 
   const getInitials = (name: string) => {
     const names = name.trim().split(" ");
@@ -70,9 +78,16 @@ export default function Sidebar() {
     <div className="hidden md:flex w-20 flex-col justify-between items-center py-8 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950">
       {/* Top Section: Navigation */}
       <div className="flex flex-col items-center space-y-6 w-full">
-        {/* Chat Link */}
+        {/* Chat Link ✅ ADDED UNREAD COUNTER */}
         <Link to="/dashboard" className={getLinkStyle("/dashboard")}>
-          <FaComments size={22} />
+          <div className="relative">
+            <FaComments size={22} />
+            {totalUnreadMessages > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center ">
+                {totalUnreadMessages}
+              </span>
+            )}
+          </div>
           <span className="text-[10px] font-bold mt-1 uppercase tracking-tighter">
             Chat
           </span>
@@ -81,7 +96,7 @@ export default function Sidebar() {
           )}
         </Link>
 
-        {/* Notifications/Requests Bell - Desktop Only Sidebar Position */}
+        {/* Notifications/Requests Bell */}
         <Link to="/notifications" className={getLinkStyle("/notifications")}>
           <div className="relative">
             <FaBell size={22} />
@@ -94,11 +109,10 @@ export default function Sidebar() {
           </span>
         </Link>
 
-        {/* Find Friends (Search) Link ✅ Added Badge for Requests */}
+        {/* Find Friends Link */}
         <Link to="/friends" className={getLinkStyle("/friends")}>
           <div className="relative">
             <FiSearch size={22} />
-            {/* Notification Counter */}
             {requests.length > 0 && (
               <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-950 animate-bounce">
                 {requests.length}
